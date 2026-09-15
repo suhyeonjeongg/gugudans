@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>말랑말랑 숲속 구구단 대모험</title>
+    <style>
+        /* 깔끔하고 귀여운 주아 폰트 */
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+
+        :root {
+            --forest-bg: #E8F5E9;
+            --grass-green: #66BB6A;
+            --wood-brown: #795548;
+            --leaf-green: #2E7D32;
+            --sky-blue: #E1F5FE;
+            --main-yellow: #FFD54F;
+            --main-pink: #FF8A80;
+            --text-dark: #3E2723;
+            --content-width: 1100px;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Jua', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--forest-bg);
+            color: var(--text-dark);
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; align-items: center;
+            height: 100vh; overflow: hidden;
+        }
+
+        /* 상단 헤더 */
+        header {
+            width: 100%; max-width: var(--content-width);
+            height: 60px; display: flex; justify-content: space-between; align-items: center;
+            padding: 0 30px; background: white;
+            border-bottom: 5px solid var(--grass-green);
+            border-radius: 0 0 25px 25px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
+
+        .container {
+            width: 100%; max-width: var(--content-width);
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            padding: 15px; position: relative; overflow-y: auto;
+        }
+
+        .hidden { display: none !important; }
+
+        /* 나무 버튼 */
+        .btn-wood {
+            cursor: pointer; border: none; border-radius: 35px;
+            font-size: 2.5rem; padding: 22px 40px;
+            background: var(--wood-brown); color: white;
+            box-shadow: 0 10px 0 #4E342E; transition: 0.1s;
+            width: 90%; max-width: 500px; margin: 15px 0;
+        }
+        .btn-wood:active { transform: translateY(5px); box-shadow: none; }
+
+        /* 설정 카드 */
+        .setup-card {
+            background: white; padding: 25px; border-radius: 35px;
+            border: 8px solid var(--wood-brown); width: 100%;
+            margin-bottom: 15px; text-align: center;
+        }
+
+        .dan-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 10px; margin: 15px 0;
+        }
+        .dan-item {
+            background: #FFFDE7; border: 3px solid #FBC02D;
+            border-radius: 18px; font-size: 1.8rem; padding: 10px 0;
+            cursor: pointer; font-weight: bold;
+        }
+        .dan-item.active { background: var(--main-yellow); transform: scale(1.05); }
+
+        .select-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+        .sel-btn { 
+            background: #F1F8E9; border: 3px solid var(--grass-green); 
+            border-radius: 15px; font-size: 1.6rem; padding: 12px 0; 
+            cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 5px;
+        }
+        .sel-btn.active { background: var(--grass-green); color: white; }
+
+        /* 퀴즈 공부 카드 */
+        .quiz-card {
+            width: 100%; max-width: 750px; background: white;
+            border: 10px solid var(--main-yellow); border-radius: 45px;
+            padding: 40px 20px; margin-bottom: 15px; text-align: center;
+        }
+        .formula-text { font-size: clamp(4rem, 12vw, 8rem); margin: 0; }
+
+        /* 하단 정답 버튼 */
+        .options-grid {
+            width: 100%; max-width: 950px; display: grid;
+            grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: auto; padding-bottom: 10px;
+        }
+        .opt-btn {
+            background: white; border: 6px solid #C8E6C9; border-radius: 30px;
+            font-size: clamp(2.5rem, 8vw, 4.5rem); padding: 15px; cursor: pointer;
+            box-shadow: 0 8px 0 #A5D6A7; color: var(--leaf-green);
+        }
+        .opt-btn.correct { background: var(--grass-green) !important; color: white; border-color: #2E7D32 !important; box-shadow: 0 8px 0 #1B5E20; }
+        .opt-btn.wrong { background: var(--main-pink) !important; color: white; border-color: #C62828 !important; box-shadow: 0 8px 0 #B71C1C; }
+
+        /* [핵심] 넓어진 게임 무대 */
+        #game-stage {
+            width: 100%; flex: 1; min-height: 450px; /* 높이 대폭 확보 */
+            background: var(--sky-blue);
+            border-radius: 40px; position: relative; overflow: hidden;
+            border: 6px solid white; margin-bottom: 15px;
+            background-image: linear-gradient(to bottom, #E1F5FE 85%, #C8E6C9 100%);
+        }
+        .balloon {
+            position: absolute; width: 160px; height: 200px;
+            border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.8rem; color: white; font-weight: bold; /* 글자 크기 최적화 */
+            box-shadow: inset -8px -8px 15px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+        .balloon::before { content: ''; position: absolute; top: 15%; left: 20%; width: 30px; height: 15px; background: rgba(255,255,255,0.3); border-radius: 50%; }
+
+        @keyframes popAni { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.2); opacity: 0; } }
+        @keyframes squishAni { 0% { transform: scale(1); } 50% { transform: scale(1.4, 0.6); } 100% { transform: scale(1); opacity: 0; } }
+        .ani-pop { animation: popAni 0.4s forwards; }
+        .ani-squish { animation: squishAni 0.6s forwards; background: #9E9E9E !important; }
+
+        #icon-overlay {
+            position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 15rem; z-index: 500; pointer-events: none; display: none;
+        }
+
+        /* 모바일 화면에서만 자동으로 높이/크기 조정 */
+        @media (max-width: 600px) {
+            html, body {
+                width: 100%;
+                min-height: 100%;
+            }
+
+            body {
+                height: auto;
+                min-height: 100dvh;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            header {
+                height: auto;
+                min-height: 52px;
+                padding: 8px 10px;
+                border-radius: 0 0 18px 18px;
+            }
+
+            header button {
+                font-size: 0.9rem !important;
+                white-space: nowrap;
+            }
+
+            header > div {
+                font-size: 1.15rem !important;
+                text-align: center;
+            }
+
+            .container {
+                flex: none;
+                min-height: calc(100dvh - 52px);
+                height: auto;
+                padding: 10px;
+                overflow-y: visible;
+            }
+
+            /* 홈 화면 */
+            #screen-home > div:first-child {
+                font-size: clamp(5rem, 25vw, 8rem) !important;
+                margin: 10px !important;
+            }
+
+            .btn-wood {
+                font-size: 1.5rem;
+                padding: 16px 20px;
+                margin: 10px 0;
+                box-shadow: 0 7px 0 #4E342E;
+            }
+
+            #screen-home > div:last-child {
+                font-size: 1.2rem !important;
+            }
+
+            /* 설정 화면 */
+            .setup-card {
+                padding: 15px;
+                border-width: 5px;
+                border-radius: 25px;
+            }
+
+            .setup-card h1 {
+                font-size: 1.7rem !important;
+            }
+
+            .setup-card .btn-wood {
+                font-size: 1.3rem !important;
+                padding: 12px !important;
+            }
+
+            .dan-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 7px;
+                margin: 10px 0;
+            }
+
+            .dan-item {
+                font-size: 1.35rem;
+                padding: 8px 0;
+            }
+
+            .select-group {
+                grid-template-columns: 1fr;
+                gap: 7px;
+            }
+
+            .sel-btn {
+                font-size: 1.2rem;
+                padding: 9px 0;
+            }
+
+            /* 학습/게임 화면 */
+            #screen-play {
+                overflow-y: visible !important;
+            }
+
+            #screen-play > div:first-child {
+                font-size: 1.15rem !important;
+                padding: 8px 12px !important;
+                margin-bottom: 7px !important;
+            }
+
+            .quiz-card {
+                border-width: 6px;
+                border-radius: 28px;
+                padding: 15px 10px;
+                margin-bottom: 10px;
+            }
+
+            .formula-text {
+                font-size: clamp(2.8rem, 15vw, 5rem);
+            }
+
+            #game-stage {
+                min-height: clamp(260px, 52vh, 420px);
+                margin-bottom: 10px;
+                border-width: 4px;
+                border-radius: 25px;
+            }
+
+            .balloon {
+                width: 105px;
+                height: 130px;
+                font-size: 1.65rem;
+            }
+
+            .options-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 9px;
+                margin-top: 0;
+                padding-bottom: max(10px, env(safe-area-inset-bottom));
+            }
+
+            .opt-btn {
+                font-size: clamp(2rem, 10vw, 3rem);
+                padding: 10px;
+                border-width: 4px;
+                border-radius: 20px;
+                box-shadow: 0 5px 0 #A5D6A7;
+            }
+
+            /* 결과 화면 */
+            #screen-result > div:first-child {
+                font-size: 7rem !important;
+            }
+
+            #screen-result > div:nth-child(2) {
+                font-size: 2rem !important;
+                text-align: center;
+            }
+
+            #screen-result p {
+                font-size: 1.8rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <button onclick="goHome()" style="background:none; border:none; font-size: 1.4rem; cursor:pointer; color:#888;">🏠 처음으로</button>
+    <div style="font-size: 2rem; font-weight: bold; color: var(--leaf-green);">🌳 숲속 구구단 모험 🦁</div>
+    <button onclick="toggleSound()" id="sound-btn" style="background:none; border:none; font-size: 1.4rem; cursor:pointer;">🔊 소리켬</button>
+</header>
+
+<div id="icon-overlay">⭐</div>
+
+<!-- [메인 화면] -->
+<div class="container" id="screen-home">
+    <div style="font-size: 10rem; margin: 20px;">🌲🐯🌲</div>
+    <button class="btn-wood" onclick="openSetup('study')">📖 공부하기 (학습 퀴즈)</button>
+    <button class="btn-wood" style="background: var(--grass-green); box-shadow: 0 10px 0 #2E7D32;" onclick="openSetup('game')">🎈 게임하기 (풍선 팡팡)</button>
+    <div style="margin-top: 10px; font-size: 1.8rem; color: var(--wood-brown);">숲속 친구들이 기다리고 있어요!</div>
+</div>
+
+<!-- [설정 화면] -->
+<div class="container hidden" id="screen-setup">
+    <div class="setup-card">
+        <h1 style="font-size: 2.2rem; margin: 0 0 10px 0;">무엇을 도와줄까? 🐰</h1>
+        <button class="btn-wood" style="font-size: 1.6rem; padding: 15px; background: #FFCCBC; box-shadow: 0 8px 0 #D84315; width: 100%;" onclick="selectAll()">✨ 2~9단 한꺼번에 선택</button>
+        <div class="dan-grid" id="dan-area"></div>
+        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+            <div style="flex:1">
+                <p style="margin: 0 0 8px 0; font-size: 1.3rem;">문제 순서</p>
+                <div class="select-group">
+                    <button class="sel-btn" id="m-seq" onclick="setMode('seq')">순서</button>
+                    <button class="sel-btn" id="m-rand" onclick="setMode('rand')">섞기</button>
+                </div>
+            </div>
+            <div style="flex:1" id="speed-section">
+                <p style="margin: 0 0 8px 0; font-size: 1.3rem;">풍선 속도</p>
+                <div class="select-group">
+                    <button class="sel-btn" id="s-slow" onclick="setSpeed(0.7)">🐌 천천히</button>
+                    <button class="sel-btn" id="s-norm" onclick="setSpeed(1.4)">🦁 보통</button>
+                    <button class="sel-btn" id="s-fast" onclick="setSpeed(3.5)">🚀 빠르게</button>
+                </div>
+            </div>
+        </div>
+        <button class="btn-wood" style="background: var(--grass-green); box-shadow: 0 10px 0 #2E7D32; width: 100%; font-size: 2.5rem;" onclick="start()">숲속으로 출발! 🚀</button>
+    </div>
+</div>
+
+<!-- [플레이 화면] -->
+<div class="container hidden" id="screen-play" style="overflow: hidden;">
+    <div style="width:100%; display:flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.8rem; font-weight: bold; background: white; padding: 10px 25px; border-radius: 20px; border: 4px solid var(--grass-green);">
+        <span>남은 문제: <span id="val-rem">0</span></span>
+        <span id="score-box" style="color: var(--main-pink);">점수: <span id="val-score">0</span></span>
+    </div>
+    <div class="quiz-card" id="quiz-card-area">
+        <p class="formula-text" id="display-q">2 × 1 = ?</p>
+    </div>
+    <div id="game-stage" class="hidden">
+        <!-- 풍선이 여기서 생성됨 -->
+    </div>
+    <div class="options-grid" id="option-area"></div>
+</div>
+
+<!-- [결과 화면] -->
+<div class="container hidden" id="screen-result">
+    <div style="font-size: 12rem;">👑🦒</div>
+    <div style="font-size: 3.5rem; color: var(--wood-brown); margin: 20px 0;">정말 대단해요! 숲속의 왕!</div>
+    <p style="font-size: 3rem;">맞힌 문제: <span id="final-res" style="color: var(--grass-green);">0</span>개</p>
+    <button class="btn-wood" onclick="goHome()">다시 하기</button>
+</div>
+
+<script>
+    let state = {
+        type: '', dans: [], mode: 'seq', speed: 1.4,
+        list: [], idx: 0, score: 0, isSound: true, canClick: true, timer: null, bPos: 0
+    };
+
+    const balloonColors = [
+        'radial-gradient(circle at 30% 30%, #ff8a80, #d32f2f)',
+        'radial-gradient(circle at 30% 30%, #81d4fa, #0288d1)',
+        'radial-gradient(circle at 30% 30%, #a5d6a7, #388e3c)',
+        'radial-gradient(circle at 30% 30%, #fff59d, #fbc02d)',
+        'radial-gradient(circle at 30% 30%, #ce93d8, #7b1fa2)'
+    ];
+
+    const danArea = document.getElementById('dan-area');
+    for(let i=2; i<=9; i++) {
+        const b = document.createElement('button');
+        b.className = 'dan-item'; b.id = `dan-${i}`; b.innerText = i + '단';
+        b.onclick = () => toggleDan(i);
+        danArea.appendChild(b);
+    }
+
+    function toggleDan(n) {
+        if(state.dans.includes(n)) {
+            state.dans = state.dans.filter(x => x !== n);
+            document.getElementById(`dan-${n}`).classList.remove('active');
+        } else {
+            state.dans.push(n);
+            document.getElementById(`dan-${n}`).classList.add('active');
+        }
+    }
+
+    function selectAll() {
+        if(state.dans.length === 8) {
+            state.dans = [];
+            document.querySelectorAll('.dan-item').forEach(b => b.classList.remove('active'));
+        } else {
+            state.dans = [2,3,4,5,6,7,8,9];
+            document.querySelectorAll('.dan-item').forEach(b => b.classList.add('active'));
+        }
+    }
+
+    function setMode(m) {
+        state.mode = m;
+        document.getElementById('m-seq').classList.toggle('active', m==='seq');
+        document.getElementById('m-rand').classList.toggle('active', m==='rand');
+    }
+
+    function setSpeed(s) {
+        state.speed = s;
+        document.getElementById('s-slow').classList.toggle('active', s === 0.7);
+        document.getElementById('s-norm').classList.toggle('active', s === 1.4);
+        document.getElementById('s-fast').classList.toggle('active', s === 3.5);
+    }
+
+    function goHome() {
+        clearInterval(state.timer);
+        document.querySelectorAll('.container').forEach(s => s.classList.add('hidden'));
+        document.getElementById('screen-home').classList.remove('hidden');
+    }
+
+    function openSetup(type) {
+        state.type = type; state.dans = [];
+        document.querySelectorAll('.dan-item, .sel-btn').forEach(b => b.classList.remove('active'));
+        setMode('seq'); setSpeed(1.4);
+        document.getElementById('speed-section').style.display = (type === 'study') ? 'none' : 'block';
+        document.getElementById('screen-home').classList.add('hidden');
+        document.getElementById('screen-setup').classList.remove('hidden');
+    }
+
+    function start() {
+        if(state.dans.length === 0) { alert('공부할 단을 골라주세요! 😊'); return; }
+        state.list = [];
+        state.dans.sort().forEach(d => {
+            for(let i=1; i<=9; i++) state.list.push({ q: `${d} × ${i}`, a: d*i });
+        });
+        if(state.mode === 'rand') state.list.sort(() => Math.random() - 0.5);
+        state.idx = 0; state.score = 0;
+        document.getElementById('screen-setup').classList.add('hidden');
+        document.getElementById('screen-play').classList.remove('hidden');
+        if(state.type === 'study') {
+            document.getElementById('quiz-card-area').classList.remove('hidden');
+            document.getElementById('game-stage').classList.add('hidden');
+            document.getElementById('score-box').classList.add('hidden');
+        } else {
+            document.getElementById('quiz-card-area').classList.add('hidden');
+            document.getElementById('game-stage').classList.remove('hidden');
+            document.getElementById('score-box').classList.remove('hidden');
+        }
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        if(state.idx >= state.list.length) { showResult(); return; }
+        state.canClick = true;
+        const item = state.list[state.idx];
+        const area = document.getElementById('option-area');
+        area.innerHTML = '';
+        document.getElementById('val-rem').innerText = state.list.length - state.idx;
+        document.getElementById('val-score').innerText = state.score;
+
+        if(state.type === 'study') {
+            document.getElementById('display-q').innerText = item.q + " = ?";
+        } else {
+            const stage = document.getElementById('game-stage');
+            stage.innerHTML = '';
+            const balloon = document.createElement('div');
+            balloon.className = 'balloon'; balloon.id = 'active-balloon';
+            balloon.innerText = item.q;
+            balloon.style.background = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+            balloon.style.left = Math.random() * (stage.clientWidth - 170) + 'px';
+            balloon.style.top = '-250px';
+            stage.appendChild(balloon);
+            
+            state.bPos = -250;
+            clearInterval(state.timer);
+            state.timer = setInterval(() => {
+                state.bPos += state.speed;
+                balloon.style.top = state.bPos + 'px';
+                if(state.bPos > stage.clientHeight - 190) { // 충돌 판정 개선
+                    clearInterval(state.timer);
+                    balloon.classList.add('ani-squish');
+                    speak("아까워요!");
+                    setTimeout(() => { state.idx++; renderQuestion(); }, 1000);
+                }
+            }, 30);
+        }
+        speak(item.q.replace('×', '곱하기'));
+
+        let opts = [item.a];
+        while(opts.length < 4) {
+            let r = Math.floor(Math.random() * 81) + 1;
+            if(!opts.includes(r)) opts.push(r);
+        }
+        opts.sort(() => Math.random() - 0.5);
+        opts.forEach(o => {
+            const b = document.createElement('button');
+            b.className = 'opt-btn'; b.innerText = o;
+            b.onclick = () => checkAnswer(o, item.a, b);
+            area.appendChild(b);
+        });
+    }
+
+    function checkAnswer(val, ans, btn) {
+        if(!state.canClick) return;
+        state.canClick = false;
+        clearInterval(state.timer);
+
+        const fb = document.getElementById('icon-overlay');
+        const b = document.getElementById('active-balloon');
+
+        if(val === ans) {
+            state.score++;
+            btn.classList.add('correct');
+            fb.innerText = '⭐';
+            fb.style.display = 'block';
+            if(b) b.classList.add('ani-pop');
+            speak("정답!");
+        } else {
+            btn.classList.add('wrong');
+            fb.innerText = '❌';
+            fb.style.display = 'block';
+            speak("아까워요!");
+            if(b) b.classList.add('ani-squish');
+            Array.from(document.querySelectorAll('.opt-btn')).forEach(b => {
+                if(parseInt(b.innerText) === ans) b.classList.add('correct');
+            });
+        }
+
+        setTimeout(() => {
+            fb.style.display = 'none';
+            state.idx++;
+            renderQuestion();
+        }, 1200);
+    }
+
+    function showResult() {
+        document.getElementById('screen-play').classList.add('hidden');
+        document.getElementById('screen-result').classList.remove('hidden');
+        document.getElementById('final-res').innerText = state.score;
+    }
+
+    function toggleSound() {
+        state.isSound = !state.isSound;
+        document.getElementById('sound-btn').innerText = state.isSound ? '🔊 소리켬' : '🔇 소리끔';
+    }
+
+    function speak(txt) {
+        if(!state.isSound) return;
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(txt);
+        msg.lang = 'ko-KR';
+        window.speechSynthesis.speak(msg);
+    }
+</script>
+
+</body>
+</html>
